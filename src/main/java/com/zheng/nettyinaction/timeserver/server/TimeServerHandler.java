@@ -1,4 +1,4 @@
-package com.zheng.nettyinaction.timeserver.old;
+package com.zheng.nettyinaction.timeserver.server;
 
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import com.zheng.nettyinaction.timeserver.utils.SocketUtil;
@@ -7,41 +7,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * @Author zhenglian
- * @Date 2019/6/20
- */
-public class TimeServer {
-    public static void main(String[] args) {
-        ServerSocket serverSocket = null;
-        try {
-            serverSocket = new ServerSocket(TimeServerConstants.PORT);
-            System.out.println("server listening on " + TimeServerConstants.PORT);
-            Socket socket;
-            while (true) {
-                socket = serverSocket.accept();
-                new Thread(new TimeServerHandler(socket)).start();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            System.out.println("server shutdown now .");
-            if (null != serverSocket) {
-                try {
-                    serverSocket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    private static class TimeServerHandler implements Runnable {
+public class TimeServerHandler implements Runnable {
 
         private Socket socket;
 
@@ -77,4 +47,3 @@ public class TimeServer {
             }
         }
     }
-}

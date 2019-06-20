@@ -1,4 +1,4 @@
-package com.zheng.nettyinaction.timeserver.old;
+package com.zheng.nettyinaction.timeserver.client;
 
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import com.zheng.nettyinaction.timeserver.utils.SocketUtil;
