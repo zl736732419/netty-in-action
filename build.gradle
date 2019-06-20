@@ -1,0 +1,36 @@
+plugins {
+    id 'java'
+    id "io.freefair.lombok" version "3.7.4"
+}
+
+group 'com.zheng.nettyinaction'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile(
+            "junit:junit:4.12"
+    )
+    
+    compile(
+            "io.netty:netty-all:4.1.35.Final"
+    )
+
+    compileOnly(
+            'org.projectlombok:lombok:1.18.6'
+    )
+    
+    annotationProcessor(
+            'org.projectlombok:lombok:1.18.6'
+    )
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
