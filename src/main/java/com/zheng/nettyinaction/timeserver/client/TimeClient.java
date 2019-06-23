@@ -36,7 +36,6 @@ public class TimeClient {
                 }
                 out.println(command);
                 out.flush();
-                System.out.println("Send order 2 client succeed.");
                 
                 String response = reader.readLine();
                 System.out.println("Now is " + response);

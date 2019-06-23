@@ -27,15 +27,16 @@ public class TimeServerHandler implements Runnable {
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             out = new PrintWriter(socket.getOutputStream());
 
-            String line;
+            String command;
             String currentTime;
             while (true) {
-                line = reader.readLine();
-                if (null == line) {
+                command = reader.readLine();
+                if (null == command) {
                     break;
                 }
+                System.out.println("server receive command: " + command);
 
-                currentTime = (line.equalsIgnoreCase(TimeServerConstants.QUERY_TIME_ORDER))
+                currentTime = (command.equalsIgnoreCase(TimeServerConstants.QUERY_TIME_ORDER))
                         ? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
                         : TimeServerConstants.BAD_ORDER;
                 out.println(currentTime);
