@@ -1,4 +1,4 @@
-package com.zheng.nettyinaction.timeserver.server.threadpool;
+package com.zheng.nettyinaction.timeserver.server.example02;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 

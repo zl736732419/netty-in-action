@@ -1,4 +1,4 @@
-package com.zheng.nettyinaction.timeserver.server.tranditional;
+package com.zheng.nettyinaction.timeserver.server.example01;
 
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import com.zheng.nettyinaction.timeserver.server.TimeServerHandler;

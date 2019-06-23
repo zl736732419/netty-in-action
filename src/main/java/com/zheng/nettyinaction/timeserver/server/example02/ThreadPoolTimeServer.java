@@ -1,4 +1,4 @@
-package com.zheng.nettyinaction.timeserver.server.threadpool;
+package com.zheng.nettyinaction.timeserver.server.example02;
 
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import com.zheng.nettyinaction.timeserver.server.TimeServerHandler;
@@ -16,7 +16,7 @@ import java.net.Socket;
  * @Author zhenglian
  * @Date 2019/6/20
  */
-public class TimeServer {
+public class ThreadPoolTimeServer {
     public static void main(String[] args) {
         ServerSocket serverSocket = null;
         try {
