@@ -65,10 +65,10 @@ public abstract class AbstractNioEventLoop {
     }
 
     protected void doWrite(SocketChannel socketChannel, String command) throws Exception {
-        byte[] bytes = command.getBytes(CharsetUtil.UTF_8);
-        ByteBuffer buffer = ByteBuffer.allocate(bytes.length);
-        buffer.put(bytes);
-        buffer.flip();
+        // 加行尾分隔符是为了兼容socket BufferedReader
+        String response = new StringBuilder(command).append("\r\n").toString();
+        byte[] bytes = response.getBytes(CharsetUtil.UTF_8);
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
         while (buffer.hasRemaining()) {
             socketChannel.write(buffer);
         }

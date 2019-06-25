@@ -67,10 +67,7 @@ public class NioTimeServer extends AbstractNioEventLoop {
             String currentTime = (TimeServerConstants.QUERY_TIME_ORDER.equalsIgnoreCase(command))
                     ? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
                     : TimeServerConstants.BAD_ORDER;
-            // 加行尾分隔符是为了兼容socket BufferedReader
-            String response = new StringBuilder(currentTime).append("\r\n").toString();
-            
-            doWrite(socketChannel, response);
+            doWrite(socketChannel, currentTime);
             
         } else if (readBytes < 0) { // 连接异常
             key.cancel();

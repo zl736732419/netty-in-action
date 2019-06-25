@@ -76,11 +76,6 @@ public class NioTimeClient extends AbstractNioEventLoop {
         }).start();
     }
 
-    public static void main(String[] args) {
-        NioTimeClient client = new NioTimeClient();
-        client.connect("localhost", TimeServerConstants.PORT);
-    }
-
     @Override
     protected void handleInput(SelectionKey key) throws Exception {
         if (null == key || !key.isValid()) {
@@ -109,5 +104,10 @@ public class NioTimeClient extends AbstractNioEventLoop {
                 socketChannel.close();
             }
         }
+    }
+
+    public static void main(String[] args) {
+        NioTimeClient client = new NioTimeClient();
+        client.connect("localhost", TimeServerConstants.PORT);
     }
 }

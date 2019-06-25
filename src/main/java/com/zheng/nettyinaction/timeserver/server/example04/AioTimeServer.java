@@ -130,7 +130,6 @@ public class AioTimeServer {
                 e.printStackTrace();
             }
         }
-
     }
 
     private class WriteCompletionHandler implements CompletionHandler<Integer, ByteBuffer> {
@@ -143,10 +142,11 @@ public class AioTimeServer {
 
         @Override
         public void completed(Integer result, ByteBuffer buffer) {
-            while (buffer.hasRemaining()) {
+            if (buffer.hasRemaining()) {
                 handler.channel.write(buffer, buffer, this);
+            } else {
+                handler.doRead();
             }
-            handler.doRead();
         }
 
         @Override
