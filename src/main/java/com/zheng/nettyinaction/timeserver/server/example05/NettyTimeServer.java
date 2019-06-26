@@ -68,11 +68,13 @@ public class NettyTimeServer {
      */
     private class NettyTimeServerHandler extends ChannelInboundHandlerAdapter {
 
+        private int counter;
+        
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
             ByteBuf buf = (ByteBuf) msg;
             String command = buf.toString(CharsetUtil.UTF_8).trim();
-            System.out.println("server receive command: " + command);
+            System.out.println("server receive command: " + command + ", current counter is " + ++counter);
             String currentTime = (TimeServerConstants.QUERY_TIME_ORDER.equalsIgnoreCase(command))
                     ? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
                     : TimeServerConstants.BAD_ORDER;
