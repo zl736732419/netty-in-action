@@ -1,9 +1,7 @@
-package com.zheng.nettyinaction.timeserver.server.example05;
+package com.zheng.nettyinaction.timeserver.server.example06;
 
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -14,12 +12,15 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.CharsetUtil;
+import io.netty.handler.codec.LineBasedFrameDecoder;
+import io.netty.handler.codec.string.LineEncoder;
+import io.netty.handler.codec.string.StringDecoder;
+import io.netty.handler.codec.string.StringEncoder;
 
 import java.net.InetSocketAddress;
 
 /**
- * 还原tcp拆包粘包问题
+ * 解决tcp拆包粘包问题
  * @Author zhenglian
  * @Date 2019/6/25
  */
@@ -40,7 +41,11 @@ public class NettyTimeCountClient {
                     @Override
                     protected void initChannel(Channel ch) throws Exception {
                         ChannelPipeline pipeline = ch.pipeline();
-                        pipeline.addLast(new NettyTimeClientHandler());
+                        pipeline.addLast(new LineBasedFrameDecoder(1024))
+                                .addLast(new StringDecoder())
+                                .addLast(new StringEncoder())
+                                .addLast(new LineEncoder())
+                                .addLast(new NettyTimeClientHandler());
                     }
                 })
         ;
@@ -56,7 +61,6 @@ public class NettyTimeCountClient {
         } finally {
             boss.shutdownGracefully();
         }
-
     }
 
     private void inputCommand(Channel channel) {
@@ -68,17 +72,14 @@ public class NettyTimeCountClient {
     }
 
 
-    private void doWrite(Channel channel, String line) {
-        byte[] bytes = line.getBytes(CharsetUtil.UTF_8);
-        ByteBuf buf = Unpooled.copiedBuffer(bytes);
-        channel.writeAndFlush(buf);
+    private void doWrite(Channel channel, String command) {
+        channel.writeAndFlush(command);
     }
     private class NettyTimeClientHandler extends ChannelInboundHandlerAdapter {
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            ByteBuf buf = (ByteBuf) msg;
-            String response = buf.toString(CharsetUtil.UTF_8);
+            String response = (String) msg;
             System.out.println("Now is " + response + ", current counter is " + ++counter);
         }
 
