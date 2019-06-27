@@ -2,6 +2,8 @@ package com.zheng.nettyinaction.timeserver.server.example06;
 
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,8 +14,10 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.LineEncoder;
+import io.netty.handler.codec.string.LineSeparator;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 
@@ -37,18 +41,41 @@ public class NettyTimeCountClient {
         bootstrap.group(boss)
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
-                .handler(new ChannelInitializer<Channel>() {
-                    @Override
-                    protected void initChannel(Channel ch) throws Exception {
-                        ChannelPipeline pipeline = ch.pipeline();
-                        pipeline.addLast(new LineBasedFrameDecoder(1024))
-                                .addLast(new StringDecoder())
-                                .addLast(new StringEncoder())
-                                .addLast(new LineEncoder())
-                                .addLast(new NettyTimeClientHandler());
-                    }
-                })
+//                .handler(new LineBasedChannalInitializer())
+                .handler(new DelimiterBasedChannalInitializer())
         ;
+    }
+
+    /**
+     * 基于自定义字符编解码
+     */
+    private class DelimiterBasedChannalInitializer extends ChannelInitializer {
+        @Override
+        protected void initChannel(Channel ch) throws Exception {
+            ChannelPipeline pipeline = ch.pipeline();
+            // delimiters can use netty Delimiters util instead.
+            ByteBuf[] delimiters = new ByteBuf[] {Unpooled.wrappedBuffer(new byte[] { '|' }) };
+            pipeline.addLast(new DelimiterBasedFrameDecoder(1024, delimiters))
+                    .addLast(new StringDecoder())
+                    .addLast(new StringEncoder())
+                    .addLast(new LineEncoder(new LineSeparator("|")))
+                    .addLast(new NettyTimeClientHandler());
+        }
+    }
+
+    /**
+     * 基于行分隔符编解码
+     */
+    private class LineBasedChannalInitializer extends ChannelInitializer {
+        @Override
+        protected void initChannel(Channel ch) throws Exception {
+            ChannelPipeline pipeline = ch.pipeline();
+            pipeline.addLast(new LineBasedFrameDecoder(1024))
+                    .addLast(new StringDecoder())
+                    .addLast(new StringEncoder())
+                    .addLast(new LineEncoder())
+                    .addLast(new NettyTimeClientHandler());
+        }
     }
     
     private void connect(String host, int port) {
