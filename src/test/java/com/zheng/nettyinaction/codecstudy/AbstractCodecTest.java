@@ -8,9 +8,8 @@ import org.junit.Test;
  * @Date 2019/6/27
  */
 public abstract class AbstractCodecTest {
-    protected Person person;
-    
     private int count = 1000;
+    private Person person;
     
     @Before
     public void init() {
@@ -19,19 +18,27 @@ public abstract class AbstractCodecTest {
     
     @Test
     public void test() {
-       codec(true);
+       codec(true, getClazz());
     }
-    
-    private void codec(boolean log) {
+
+    protected Class<?> getClazz() {
+        return Person.class;
+    }
+
+    private <T> void codec(boolean log, Class<T> clazz) {
         ICodec codec = getCodec();
-        byte[] bytes = codec.encode(person);
+        byte[] bytes = codec.encode(getPerson());
         if (log) {
             System.out.println("encode bytes size: " + bytes.length);
         }
-        Person person1 = codec.decode(bytes, Person.class);
+        T t = codec.decode(bytes, clazz);
         if (log) {
-            System.out.println(person1);
+            System.out.println(t);
         }
+    }
+
+    protected Object getPerson() {
+        return person;
     }
 
     @Test
@@ -39,10 +46,10 @@ public abstract class AbstractCodecTest {
         long start = System.currentTimeMillis();
         for (int i = 0; i < count; i++) {
             ICodec codec = getCodec();
-            codec.encode(person);
+            codec.encode(getPerson());
         }
         long end = System.currentTimeMillis();
-        System.out.println("codecstudy toke " + (end - start) + "ms.");
+        System.out.println("codec toke " + (end - start) + "ms.");
     }
     
     protected abstract ICodec getCodec();
