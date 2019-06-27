@@ -15,6 +15,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.FixedLengthFrameDecoder;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.LineEncoder;
 import io.netty.handler.codec.string.LineSeparator;
@@ -22,7 +25,6 @@ import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import org.apache.commons.lang3.StringUtils;
 
 import java.net.InetSocketAddress;
 import java.time.LocalDateTime;
@@ -48,7 +50,9 @@ public class NettyTimeServer {
                 .option(ChannelOption.SO_BACKLOG, 1024)
                 .handler(new LoggingHandler(LogLevel.INFO))
 //                .childHandler(new LineBasedChannalInitializer())
-                .childHandler(new DelimiterBasedChannalInitializer())
+//                .childHandler(new DelimiterBasedChannalInitializer())
+//                .childHandler(new FixedLengthChannalInitializer())
+                .childHandler(new LengthFieldBasedChannalInitializer())
                 .localAddress(new InetSocketAddress("localhost", port))
         ;
     }
@@ -70,15 +74,9 @@ public class NettyTimeServer {
      */
     private class NettyTimeServerHandler extends ChannelInboundHandlerAdapter {
 
-        private String seperator;
-        
         private int counter;
 
         public NettyTimeServerHandler() {
-        }
-        
-        public NettyTimeServerHandler(String seperator) {
-            this.seperator = seperator;
         }
 
         @Override
@@ -88,12 +86,7 @@ public class NettyTimeServer {
             String currentTime = (TimeServerConstants.QUERY_TIME_ORDER.equalsIgnoreCase(command))
                     ? LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
                     : TimeServerConstants.BAD_ORDER;
-            
             String response = currentTime;
-            if (StringUtils.isNotEmpty(seperator)) {
-                response = new StringBuilder(currentTime).append(seperator).toString();
-            }
-            
             ctx.writeAndFlush(response);
         }
 
@@ -110,6 +103,39 @@ public class NettyTimeServer {
         server.start();
     }
 
+    /**
+     * 基于长度字段编解码
+     */
+    private class LengthFieldBasedChannalInitializer extends ChannelInitializer {
+        @Override
+        protected void initChannel(Channel ch) throws Exception {
+            ChannelPipeline pipeline = ch.pipeline();
+            // delimiters can use netty Delimiters util instead.
+            pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 0, 2, 0, 2))
+                    .addLast(new StringDecoder())
+                    .addLast(new LengthFieldPrepender(2))
+                    .addLast(new StringEncoder())
+                    .addLast(new NettyTimeServerHandler());
+        }
+    }
+
+    /**
+     * 基于固定长度编解码
+     * 这里指定20字节长度的数据包进行传输
+     * 可以通过telnet进行测试
+     */
+    private class FixedLengthChannalInitializer extends ChannelInitializer {
+        @Override
+        protected void initChannel(Channel ch) throws Exception {
+            ChannelPipeline pipeline = ch.pipeline();
+            // delimiters can use netty Delimiters util instead.
+            pipeline.addLast(new FixedLengthFrameDecoder(20))
+                    .addLast(new StringDecoder())
+                    .addLast(new StringEncoder())
+                    .addLast(new NettyTimeServerHandler());
+        }
+    }
+    
     /**
      * 基于自定义字符编解码
      */

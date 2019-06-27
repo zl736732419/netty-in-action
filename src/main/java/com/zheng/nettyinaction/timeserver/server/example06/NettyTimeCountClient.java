@@ -15,6 +15,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.codec.string.LineEncoder;
 import io.netty.handler.codec.string.LineSeparator;
@@ -42,10 +44,39 @@ public class NettyTimeCountClient {
                 .channel(NioSocketChannel.class)
                 .option(ChannelOption.TCP_NODELAY, true)
 //                .handler(new LineBasedChannalInitializer())
-                .handler(new DelimiterBasedChannalInitializer())
+//                .handler(new DelimiterBasedChannalInitializer())
+                .handler(new LengthFieldBasedChannalInitializer())
         ;
     }
 
+    private void connect(String host, int port) {
+        try {
+            ChannelFuture future = bootstrap.connect(new InetSocketAddress(host, port)).sync();
+            inputCommand(future.channel());
+            future.channel().closeFuture().sync();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            boss.shutdownGracefully();
+        }
+    }
+
+    /**
+     * 基于长度字段编解码
+     */
+    private class LengthFieldBasedChannalInitializer extends ChannelInitializer {
+        @Override
+        protected void initChannel(Channel ch) throws Exception {
+            ChannelPipeline pipeline = ch.pipeline();
+            // delimiters can use netty Delimiters util instead.
+            pipeline.addLast(new LengthFieldBasedFrameDecoder(1024, 0, 2, 0, 2))
+                    .addLast(new StringDecoder())
+                    .addLast(new LengthFieldPrepender(2))
+                    .addLast(new StringEncoder())
+                    .addLast(new NettyTimeClientHandler());
+        }
+    }
+    
     /**
      * 基于自定义字符编解码
      */
@@ -78,18 +109,6 @@ public class NettyTimeCountClient {
         }
     }
     
-    private void connect(String host, int port) {
-        try {
-            ChannelFuture future = bootstrap.connect(new InetSocketAddress(host, port)).sync();
-            inputCommand(future.channel());
-            future.channel().closeFuture().sync();
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            boss.shutdownGracefully();
-        }
-    }
-
     private void inputCommand(Channel channel) {
         // 发送请求命令
         String command = TimeServerConstants.QUERY_TIME_ORDER;
@@ -112,6 +131,7 @@ public class NettyTimeCountClient {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+            cause.printStackTrace();
             ctx.close();
         }
 
