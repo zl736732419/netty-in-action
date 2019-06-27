@@ -1,6 +1,6 @@
-package com.zheng.nettyinaction.codec.objstream;
+package com.zheng.nettyinaction.codecstudy;
 
-import com.zheng.nettyinaction.codec.ICodec;
+import com.zheng.nettyinaction.codecstudy.objstream.ObjectStreamCodec;
 
 /**
  * @Author zhenglian
@@ -17,7 +17,7 @@ public class ObjectStreamCodecTest extends AbstractCodecTest{
     }
 
     /**
-     * codec toke 62ms.
+     * codecstudy toke 62ms.
      */
     @Override
     public void performance() {

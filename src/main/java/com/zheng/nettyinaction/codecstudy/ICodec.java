@@ -1,4 +1,4 @@
-package com.zheng.nettyinaction.codec;
+package com.zheng.nettyinaction.codecstudy;
 
 /**
  * @Author zhenglian

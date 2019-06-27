@@ -1,7 +1,5 @@
-package com.zheng.nettyinaction.codec.objstream;
+package com.zheng.nettyinaction.codecstudy;
 
-import com.zheng.nettyinaction.codec.ICodec;
-import com.zheng.nettyinaction.codec.Person;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,7 +42,7 @@ public abstract class AbstractCodecTest {
             codec.encode(person);
         }
         long end = System.currentTimeMillis();
-        System.out.println("codec toke " + (end - start) + "ms.");
+        System.out.println("codecstudy toke " + (end - start) + "ms.");
     }
     
     protected abstract ICodec getCodec();

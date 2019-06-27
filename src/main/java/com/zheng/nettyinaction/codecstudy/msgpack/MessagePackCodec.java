@@ -1,7 +1,7 @@
-package com.zheng.nettyinaction.codec.msgpack;
+package com.zheng.nettyinaction.codecstudy.msgpack;
 
-import com.zheng.nettyinaction.codec.ICodec;
-import com.zheng.nettyinaction.codec.Person;
+import com.zheng.nettyinaction.codecstudy.ICodec;
+import com.zheng.nettyinaction.codecstudy.Person;
 import org.msgpack.MessagePack;
 
 import java.io.IOException;

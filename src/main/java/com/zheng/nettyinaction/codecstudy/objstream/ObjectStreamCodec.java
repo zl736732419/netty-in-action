@@ -1,6 +1,6 @@
-package com.zheng.nettyinaction.codec.objstream;
+package com.zheng.nettyinaction.codecstudy.objstream;
 
-import com.zheng.nettyinaction.codec.ICodec;
+import com.zheng.nettyinaction.codecstudy.ICodec;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

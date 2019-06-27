@@ -1,10 +1,11 @@
-package com.zheng.nettyinaction.codec;
+package com.zheng.nettyinaction.codecstudy;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.msgpack.annotation.Message;
 
 import java.io.Serializable;
 
@@ -18,10 +19,8 @@ import java.io.Serializable;
 @AllArgsConstructor
 @ToString
 
-//@Message
-public class Person 
-        implements Serializable  
-{
+@Message
+public class Person implements Serializable {
     public static final long serialVersionUID = 1L;
     
     private Long userId;

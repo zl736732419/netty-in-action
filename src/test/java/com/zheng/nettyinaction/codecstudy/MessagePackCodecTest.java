@@ -1,7 +1,6 @@
-package com.zheng.nettyinaction.codec.objstream;
+package com.zheng.nettyinaction.codecstudy;
 
-import com.zheng.nettyinaction.codec.ICodec;
-import com.zheng.nettyinaction.codec.msgpack.MessagePackCodec;
+import com.zheng.nettyinaction.codecstudy.msgpack.MessagePackCodec;
 
 /**
  * @Author zhenglian
@@ -17,7 +16,7 @@ public class MessagePackCodecTest extends AbstractCodecTest {
     }
 
     /**
-     * codec toke 14612ms.
+     * codecstudy toke 14612ms.
      */
     @Override
     public void performance() {
