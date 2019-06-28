@@ -18,10 +18,17 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.marshalling.DefaultMarshallerProvider;
+import io.netty.handler.codec.marshalling.DefaultUnmarshallerProvider;
+import io.netty.handler.codec.marshalling.MarshallingDecoder;
+import io.netty.handler.codec.marshalling.MarshallingEncoder;
 import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
+import org.jboss.marshalling.MarshallerFactory;
+import org.jboss.marshalling.Marshalling;
+import org.jboss.marshalling.MarshallingConfiguration;
 
 import java.net.InetSocketAddress;
 
@@ -59,12 +66,12 @@ public class NettyPersonClient {
 
     private void inputCommand(Channel channel) {
         // 发送请求命令
-        Object object = PersonModule.Person.newBuilder()
-                    .setUserId(1L)
-                    .setName("zhangsan")
-                    .setMaster("大学本科")
-                    .build();
-//        Object object = new Person(1L, "zhangsan", "大学本科");
+//        Object object = PersonModule.Person.newBuilder()
+//                    .setUserId(1L)
+//                    .setName("zhangsan")
+//                    .setMaster("大学本科")
+//                    .build();
+        Object object = new Person(1L, "zhangsan", "大学本科");
         channel.writeAndFlush(object);
     }
 
@@ -76,7 +83,19 @@ public class NettyPersonClient {
         protected void initChannel(Channel ch) throws Exception {
             ChannelPipeline pipeline = ch.pipeline();
 //            msgpackCodec(pipeline);
-            protobufCodec(pipeline);
+//            protobufCodec(pipeline);
+            marshallingCodec(pipeline);
+        }
+
+        
+        
+        private void marshallingCodec(ChannelPipeline pipeline) {
+            MarshallerFactory factory = Marshalling.getProvidedMarshallerFactory("serial");
+            MarshallingConfiguration config = new MarshallingConfiguration();
+            config.setVersion(5);
+            pipeline.addLast(new MarshallingDecoder(new DefaultUnmarshallerProvider(factory, config)))
+                    .addLast(new MarshallingEncoder(new DefaultMarshallerProvider(factory, config)))
+                    .addLast(new NettyPersonClientHandler<Person>());
         }
 
         private void protobufCodec(ChannelPipeline pipeline) {

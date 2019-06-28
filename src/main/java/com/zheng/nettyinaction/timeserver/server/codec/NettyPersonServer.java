@@ -18,12 +18,19 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.marshalling.DefaultMarshallerProvider;
+import io.netty.handler.codec.marshalling.DefaultUnmarshallerProvider;
+import io.netty.handler.codec.marshalling.MarshallingDecoder;
+import io.netty.handler.codec.marshalling.MarshallingEncoder;
 import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import org.jboss.marshalling.MarshallerFactory;
+import org.jboss.marshalling.Marshalling;
+import org.jboss.marshalling.MarshallingConfiguration;
 
 import java.net.InetSocketAddress;
 
@@ -96,9 +103,19 @@ public class NettyPersonServer {
         protected void initChannel(Channel ch) throws Exception {
             ChannelPipeline pipeline = ch.pipeline();
 //            msgpackCodec(pipeline);
-            protobufCodec(pipeline);
+//            protobufCodec(pipeline);
+            marshallingCodec(pipeline);
         }
 
+        private void marshallingCodec(ChannelPipeline pipeline) {
+            MarshallerFactory factory = Marshalling.getProvidedMarshallerFactory("serial");
+            MarshallingConfiguration config = new MarshallingConfiguration();
+            config.setVersion(5);
+            pipeline.addLast(new MarshallingDecoder(new DefaultUnmarshallerProvider(factory, config)))
+                    .addLast(new MarshallingEncoder(new DefaultMarshallerProvider(factory, config)))
+                    .addLast(new NettyPersonServerHandler<Person>());
+        }
+        
         private void msgpackCodec(ChannelPipeline pipeline) {
             pipeline.addLast(new LengthFieldBasedFrameDecoder(65535, 0, 2, 0, 2))
                     .addLast(new MessagePackDecoder())
