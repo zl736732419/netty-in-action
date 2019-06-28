@@ -1,6 +1,7 @@
 package com.zheng.nettyinaction.timeserver.server.codec;
 
 import com.zheng.nettyinaction.codecstudy.Person;
+import com.zheng.nettyinaction.codecstudy.protobuf.PersonModule;
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import com.zheng.nettyinaction.timeserver.server.codec.msgpack.MessagePackDecoder;
 import com.zheng.nettyinaction.timeserver.server.codec.msgpack.MessagePackEncoder;
@@ -17,6 +18,10 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.handler.codec.protobuf.ProtobufDecoder;
+import io.netty.handler.codec.protobuf.ProtobufEncoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 
@@ -41,7 +46,7 @@ public class NettyPersonServer {
                 .channel(NioServerSocketChannel.class)
                 .option(ChannelOption.SO_BACKLOG, 1024)
                 .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(new LengthFieldBasedChannalInitializer())
+                .childHandler(new NettyChannelInitializer())
                 .localAddress(new InetSocketAddress("localhost", port))
         ;
     }
@@ -61,16 +66,13 @@ public class NettyPersonServer {
     /**
      * 考虑粘包拆包，半包读写情况
      */
-    private class NettyPersonServerHandler extends ChannelInboundHandlerAdapter {
-
-        public NettyPersonServerHandler() {
-        }
+    private class NettyPersonServerHandler<T> extends ChannelInboundHandlerAdapter {
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            Person person = (Person) msg;
-            System.out.println(person);
-            ctx.writeAndFlush(person);
+            T t = (T) msg;
+            System.out.println(t);
+            ctx.writeAndFlush(t);
         }
 
         @Override
@@ -89,15 +91,28 @@ public class NettyPersonServer {
     /**
      * 基于长度字段编解码
      */
-    private class LengthFieldBasedChannalInitializer extends ChannelInitializer {
+    private class NettyChannelInitializer extends ChannelInitializer {
         @Override
         protected void initChannel(Channel ch) throws Exception {
             ChannelPipeline pipeline = ch.pipeline();
+//            msgpackCodec(pipeline);
+            protobufCodec(pipeline);
+        }
+
+        private void msgpackCodec(ChannelPipeline pipeline) {
             pipeline.addLast(new LengthFieldBasedFrameDecoder(65535, 0, 2, 0, 2))
                     .addLast(new MessagePackDecoder())
                     .addLast(new LengthFieldPrepender(2))
                     .addLast(new MessagePackEncoder())
-                    .addLast(new NettyPersonServerHandler());
+                    .addLast(new NettyPersonServerHandler<Person>());
+        }
+
+        private void protobufCodec(ChannelPipeline pipeline) {
+            pipeline.addLast(new ProtobufVarint32FrameDecoder())
+                    .addLast(new ProtobufDecoder(PersonModule.Person.getDefaultInstance()))
+                    .addLast(new ProtobufVarint32LengthFieldPrepender())
+                    .addLast(new ProtobufEncoder())
+                    .addLast(new NettyPersonServerHandler<PersonModule.Person>());
         }
     }
 }

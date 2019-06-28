@@ -18,10 +18,9 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-
 @Message
 public class Person implements Serializable {
-    public static final long serialVersionUID = 1L;
+    transient public static final long serialVersionUID = 1L;
     
     private Long userId;
     private String name;
