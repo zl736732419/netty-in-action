@@ -1,6 +1,7 @@
 package com.zheng.nettyinaction.http;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -8,6 +9,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelProgressiveFuture;
+import io.netty.channel.ChannelProgressiveFutureListener;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -24,7 +27,10 @@ import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.stream.ChunkedFile;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.CharsetUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -99,6 +105,8 @@ public class HttpFileServer {
 
         private static final Pattern INSECURE_URI = Pattern.compile(".*[<>&\"].*");
 
+        private static final Pattern ALLOWED_FILE_NAME = Pattern.compile("[A-Za-z0-9][-_A-Za-z0-9\\.]*");
+
         private String url;
 
         public HttpFileServerHandler(String url) {
@@ -119,7 +127,9 @@ public class HttpFileServer {
                 return;
             }
             
-            final String path = sanitizeUri(request.uri());
+            String uri = request.uri();
+            final String path = sanitizeUri(uri);
+            System.out.println("path: " + path);
             if (StringUtils.isEmpty(path)) {
                 sendError(ctx, HttpResponseStatus.FORBIDDEN);
                 return;
@@ -131,16 +141,74 @@ public class HttpFileServer {
                 return;
             }
             
+            // handle dir
             if (file.isDirectory()) {
-                // TODO
+                if (uri.endsWith("/")) {
+                    sendListing(ctx, file);
+                } else {
+                    sendRedirect(ctx, uri + '/');
+                }
                 return;
             }
             
+            // not file type ??? invalid file
             if (!file.isFile()) {
                 sendError(ctx, HttpResponseStatus.FORBIDDEN);
                 return;
             }
 
+            if (!sendHttpResponse(ctx, request, file)) {
+                return;
+            }
+
+            sendHttpContent(ctx, request, file);
+        }
+
+        private static void sendListing(ChannelHandlerContext ctx, File dir) {
+            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
+            StringBuilder buf = new StringBuilder();
+            String dirPath = dir.getPath();
+            buf.append("<!DOCTYPE html>\r\n");
+            buf.append("<html><head><title>");
+            buf.append(dirPath);
+            buf.append(" 目录：");
+            buf.append("</title></head><body>\r\n");
+            buf.append("<h3>");
+            buf.append(dirPath).append(" 目录：");
+            buf.append("</h3>\r\n");
+            buf.append("<ul>");
+            buf.append("<li>链接：<a href=\"../\">..</a></li>\r\n");
+            for (File f : dir.listFiles()) {
+                if (f.isHidden() || !f.canRead()) {
+                    continue;
+                }
+                String name = f.getName();
+                if (!ALLOWED_FILE_NAME.matcher(name).matches()) {
+                    continue;
+                }
+                buf.append("<li>链接：<a href=\"");
+                buf.append(name);
+                buf.append("\">");
+                buf.append(name);
+                buf.append("</a></li>\r\n");
+            }
+            buf.append("</ul></body></html>\r\n");
+            ByteBuf buffer = Unpooled.copiedBuffer(buf, CharsetUtil.UTF_8);
+            response.content().writeBytes(buffer);
+            buffer.release();
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        }
+
+        private static void sendRedirect(ChannelHandlerContext ctx, String newUri) {
+            FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FOUND);
+            response.headers().set(HttpHeaderNames.LOCATION, newUri);
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        }
+
+
+        private void sendHttpContent(ChannelHandlerContext ctx, FullHttpRequest request, File file) throws Exception {
+            // http response  
             RandomAccessFile randomAccessFile;
             try {
                 randomAccessFile = new RandomAccessFile(file, "r");
@@ -149,24 +217,51 @@ public class HttpFileServer {
                 return;
             }
 
-            long length = randomAccessFile.length();
-            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-            setContentLength(response, length);
-            setContentTypeHeader(response, file);
-            
-            // TODO
+            ChannelFuture future = ctx.write(new ChunkedFile(randomAccessFile, 0, randomAccessFile.length(),
+                            8192), ctx.newProgressivePromise());
+            future.addListener(new ChannelProgressiveFutureListener() {
+                @Override
+                public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) throws Exception {
+                    if (total < 0) { // total unknown
+                        System.err.println("Transfer progress: " + progress);
+                    } else {
+                        System.err.println("Transfer progress: " + progress + " / "
+                                + total);
+                    }
+                }
 
+                @Override
+                public void operationComplete(ChannelProgressiveFuture future) throws Exception {
+                    System.out.println("Transfer complete.");
+                }
+            });
+            ChannelFuture lastContentFuture = ctx
+                    .writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
             
+            if (!HttpUtil.isKeepAlive(request)) {
+                lastContentFuture.addListener(ChannelFutureListener.CLOSE);
+            }
+        }
+
+        private boolean sendHttpResponse(ChannelHandlerContext ctx, FullHttpRequest request, File file) throws Exception {
             
+            long length = file.length();
+            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+            // content-length
+            HttpUtil.setContentLength(response, length);
+            // content-type
+            setContentTypeHeader(response, file);
+            // keep alive
+            if (HttpUtil.isKeepAlive(request)) {
+                HttpUtil.setKeepAlive(response, true);
+            }
+            ctx.write(response);
+            return true;
         }
 
         private void setContentTypeHeader(HttpResponse response, File file) {
             MimetypesFileTypeMap mimetypesFileTypeMap = new MimetypesFileTypeMap();
             response.headers().add(HttpHeaderNames.CONTENT_TYPE, mimetypesFileTypeMap.getContentType(file.getPath()));
-        }
-
-        private void setContentLength(HttpResponse response, long length) {
-            response.headers().add(HttpHeaderNames.CONTENT_LENGTH, length);
         }
 
         private String sanitizeUri(String uri) {
