@@ -1,27 +1,23 @@
 package com.zheng.nettyinaction.protocol;
 
-import com.zheng.nettyinaction.protocol.bean.NHeader;
-import com.zheng.nettyinaction.protocol.bean.NMessage;
 import com.zheng.nettyinaction.protocol.codec.NMessageDecoder;
 import com.zheng.nettyinaction.protocol.codec.NMessageEncoder;
-import com.zheng.nettyinaction.protocol.enums.EnumMessageType;
+import com.zheng.nettyinaction.protocol.handlers.HeartBeatReqHandler;
+import com.zheng.nettyinaction.protocol.handlers.IdleTimeoutHandler;
 import com.zheng.nettyinaction.protocol.handlers.LoginAuthReqHandler;
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.IdleStateHandler;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +48,9 @@ public class NettyProtocolClient {
                                 4, 4, -8, 0))
                                 .addLast(new NMessageEncoder())
                                 .addLast(new LoginAuthReqHandler())
+                                .addLast(new HeartBeatReqHandler())
+                                .addLast(new IdleStateHandler(10, 10, 10))
+                                .addLast(new IdleTimeoutHandler())
                         ;
                     }
                 })
@@ -59,6 +58,7 @@ public class NettyProtocolClient {
     }
     
     private void connect(String host, int port) {
+        System.out.println("start connecting server " + host + ":" + port + "...");
         try {
             ChannelFuture future = bootstrap.connect(new InetSocketAddress(host, port)).sync();
             future.channel().closeFuture().sync();
@@ -84,39 +84,6 @@ public class NettyProtocolClient {
 
     public static void main(String[] args) {
         NettyProtocolClient client = new NettyProtocolClient();
-        client.connect("localhost", TimeServerConstants.PORT);
-    }
-
-    private static class ClientMessageHandler extends SimpleChannelInboundHandler<NMessage> {
-        @Override
-        public void channelActive(ChannelHandlerContext ctx) throws Exception {
-            System.out.println("send heart beat msg to server.");
-            NMessage heartBeat = buildHeartBeatMessage();
-            ctx.writeAndFlush(heartBeat);
-        }
-        
-        private NMessage buildHeartBeatMessage() {
-            NMessage message = new NMessage();
-            NHeader header = new NHeader();
-            header.setType(EnumMessageType.HEARTBEAT_REQ.value());
-            Map<String, Object> attachment = new HashMap<>();
-            attachment.put("hello", "world");
-            header.setAttachment(attachment);
-            message.setHeader(header);
-            
-            String body = "netty protocol customize ";
-            message.setBody(body);
-            return message;
-        }
-        
-        @Override
-        public void channelRead0(ChannelHandlerContext ctx, NMessage msg) throws Exception {
-            System.out.println("response msg: " + msg);
-        }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            super.exceptionCaught(ctx, cause);
-        }
+        client.connect("192.168.3.12", TimeServerConstants.PORT);
     }
 }

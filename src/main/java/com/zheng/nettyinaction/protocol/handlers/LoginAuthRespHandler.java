@@ -52,7 +52,7 @@ public class LoginAuthRespHandler extends ChannelInboundHandlerAdapter {
         }
         
         nodeCheck.put(clientIp, true);
-        NMessage response = buildResponse((byte)1);
+        NMessage response = buildResponse((byte) 1);
         ctx.writeAndFlush(response);
     }
 

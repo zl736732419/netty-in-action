@@ -1,19 +1,17 @@
 package com.zheng.nettyinaction.protocol;
 
-import com.zheng.nettyinaction.protocol.bean.NMessage;
 import com.zheng.nettyinaction.protocol.codec.NMessageDecoder;
 import com.zheng.nettyinaction.protocol.codec.NMessageEncoder;
+import com.zheng.nettyinaction.protocol.handlers.HeartBeatRespHandler;
 import com.zheng.nettyinaction.protocol.handlers.LoginAuthRespHandler;
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
@@ -47,10 +45,11 @@ public class NettyProtocolServer {
                                 4, -8, 0))
                                 .addLast(new NMessageEncoder())
                                 .addLast(new LoginAuthRespHandler())
+                                .addLast(new HeartBeatRespHandler())
                         ;
                     }
                 })
-                .localAddress(new InetSocketAddress("localhost", port))
+                .localAddress(new InetSocketAddress(port))
         ;
     }
     
@@ -71,18 +70,5 @@ public class NettyProtocolServer {
         NettyProtocolServer server = new NettyProtocolServer(port);
         System.out.println("server listening on " + port);
         server.start();
-    }
-
-    private class ServerMessageHandler extends SimpleChannelInboundHandler<NMessage> {
-        @Override
-        public void channelRead0(ChannelHandlerContext ctx, NMessage msg) throws Exception {
-            System.out.println("receive msg: " + msg);
-            ctx.writeAndFlush(msg);
-        }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            super.exceptionCaught(ctx, cause);
-        }
     }
 }
