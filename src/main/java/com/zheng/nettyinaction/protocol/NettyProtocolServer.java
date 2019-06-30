@@ -3,6 +3,7 @@ package com.zheng.nettyinaction.protocol;
 import com.zheng.nettyinaction.protocol.bean.NMessage;
 import com.zheng.nettyinaction.protocol.codec.NMessageDecoder;
 import com.zheng.nettyinaction.protocol.codec.NMessageEncoder;
+import com.zheng.nettyinaction.protocol.handlers.LoginAuthRespHandler;
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -45,7 +46,8 @@ public class NettyProtocolServer {
                         pipeline.addLast(new NMessageDecoder(1024 * 1024, 4, 
                                 4, -8, 0))
                                 .addLast(new NMessageEncoder())
-                                .addLast(new ServerMessageHandler());
+                                .addLast(new LoginAuthRespHandler())
+                        ;
                     }
                 })
                 .localAddress(new InetSocketAddress("localhost", port))

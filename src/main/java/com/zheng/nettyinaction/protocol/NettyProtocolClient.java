@@ -5,6 +5,7 @@ import com.zheng.nettyinaction.protocol.bean.NMessage;
 import com.zheng.nettyinaction.protocol.codec.NMessageDecoder;
 import com.zheng.nettyinaction.protocol.codec.NMessageEncoder;
 import com.zheng.nettyinaction.protocol.enums.EnumMessageType;
+import com.zheng.nettyinaction.protocol.handlers.LoginAuthReqHandler;
 import com.zheng.nettyinaction.timeserver.constants.TimeServerConstants;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -50,7 +51,7 @@ public class NettyProtocolClient {
                         pipeline.addLast(new NMessageDecoder(1024 * 1024, 
                                 4, 4, -8, 0))
                                 .addLast(new NMessageEncoder())
-                                .addLast(new ClientMessageHandler())
+                                .addLast(new LoginAuthReqHandler())
                         ;
                     }
                 })
