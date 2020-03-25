@@ -14,10 +14,10 @@ import java.io.Serializable;
  * @Author zhenglian
  * @Date 2019/6/27
  */
-public class ObjectStreamCodec implements ICodec {
+public class ObjectStreamCodec<T> implements ICodec<T> {
 
     @Override
-    public <T> byte[] encode(T t) {
+    public byte[] encode(T t) {
         if (!(t instanceof Serializable)) {
             return null;
         }
@@ -41,7 +41,7 @@ public class ObjectStreamCodec implements ICodec {
     }
 
     @Override
-    public <T> T decode(byte[] bytes, Class<T> clazz) {
+    public T decode(byte[] bytes, Class<T> clazz) {
         ByteArrayInputStream input = new ByteArrayInputStream(bytes);
         ObjectInputStream objInput = null;
         T t = null;

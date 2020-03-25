@@ -14,7 +14,7 @@ import java.io.IOException;
  * @Author zhenglian
  * @Date 2019/6/27
  */
-public class MessagePackCodec implements ICodec {
+public class MessagePackCodec<T> implements ICodec<T> {
     private MessagePack pack;
    
     public MessagePackCodec() {
@@ -23,7 +23,7 @@ public class MessagePackCodec implements ICodec {
     }
     
     @Override
-    public <T> byte[] encode(T t) {
+    public byte[] encode(T t) {
         byte[] bytes = null;
         try {
             bytes = pack.write(t);
@@ -34,7 +34,7 @@ public class MessagePackCodec implements ICodec {
     }
 
     @Override
-    public <T> T decode(byte[] bytes, Class<T> clazz) {
+    public T decode(byte[] bytes, Class<T> clazz) {
         T t = null;
         try {
             t = pack.read(bytes, clazz);
